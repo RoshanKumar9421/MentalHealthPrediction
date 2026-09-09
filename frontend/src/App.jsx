@@ -106,7 +106,7 @@ function App() {
           </div>
 
           <h1>
-            Mental Health <em>Signal</em>
+            Mental Health <em>Prediction</em>
           </h1>
 
           <p>
