@@ -415,7 +415,7 @@ function App() {
                 >
                   {loading
                     ? "Reading your signal..."
-                    : "Analyze my signal"}
+                    : "Analyze "}
                 </button>
 
                 <button
