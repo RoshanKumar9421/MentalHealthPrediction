@@ -281,7 +281,7 @@ function App() {
                   </Field>
 
 
-                  <Field label="Daily phone usage">
+                  {/* <Field label="Daily phone usage">
                     <div className="input-with-unit">
                       <input
                         type="number"
@@ -296,7 +296,7 @@ function App() {
                       />
                       <span>hrs</span>
                     </div>
-                  </Field>
+                  </Field> */}
 
 
                   <Field label="News platform">
