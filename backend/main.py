@@ -2,14 +2,15 @@ import os
 import joblib
 import pandas as pd
 
-from fastapi import FastAPI
+from typing import Optional
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 
-# --------------------------------------------------
-# Load trained model
-# --------------------------------------------------
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "Mental_Health_Model.pkl")
@@ -17,9 +18,7 @@ MODEL_PATH = os.path.join(BASE_DIR, "Mental_Health_Model.pkl")
 model = joblib.load(MODEL_PATH)
 
 
-# --------------------------------------------------
-# Create FastAPI application
-# --------------------------------------------------
+
 
 app = FastAPI(
     title="Student Stress Prediction API",
@@ -28,9 +27,22 @@ app = FastAPI(
 )
 
 
-# --------------------------------------------------
-# CORS
-# --------------------------------------------------
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = exc.errors()
+    print("=== Validation Error on /predict ===")
+    for err in errors:
+        loc = " -> ".join(str(l) for l in err.get("loc", []))
+        print(f"  Field '{loc}': {err.get('msg')} (input: {err.get('input')})")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": errors},
+    )
+
+
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,13 +53,11 @@ app.add_middleware(
 )
 
 
-# --------------------------------------------------
-# Input schema
-# --------------------------------------------------
+
 
 class StudentData(BaseModel):
 
-    age: int = Field(..., ge=13, le=100)
+    age: int = Field(..., ge=10, le=100)
 
     gender: str
 
@@ -56,6 +66,8 @@ class StudentData(BaseModel):
     academic_level: str
 
     most_used_platform: str
+
+    primary_purpose: Optional[str] = None
 
     daily_screen_time: float = Field(..., ge=0, le=24)
 
@@ -73,10 +85,10 @@ class StudentData(BaseModel):
 
     sleep_time: str
 
+    thoughts: Optional[str] = None
 
-# --------------------------------------------------
-# Home route
-# --------------------------------------------------
+
+
 
 @app.get("/")
 def home():
@@ -87,14 +99,11 @@ def home():
     }
 
 
-# --------------------------------------------------
-# Prediction route
-# --------------------------------------------------
 
 @app.post("/predict")
 def predict_stress(data: StudentData):
 
-    # Convert input into DataFrame
+   
     input_data = pd.DataFrame([{
         "age": data.age,
         "gender": data.gender,
@@ -111,10 +120,10 @@ def predict_stress(data: StudentData):
         "sleep_time": data.sleep_time
     }])
 
-    # Prediction
+   
     prediction = model.predict(input_data)[0]
 
-    # Prediction probability
+   
     probabilities = model.predict_proba(input_data)[0]
 
     classes = model.classes_

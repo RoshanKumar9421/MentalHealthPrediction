@@ -16,6 +16,7 @@ const initialForm = {
   daily_physical_activity: "",
   sleep_hours: "",
   sleep_time: "",
+  thoughts: "",
 };
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
           country: formData.country,
           academic_level: formData.academic_level,
           most_used_platform: formData.most_used_platform,
+          primary_purpose: formData.primary_purpose,
           daily_screen_time: Number(formData.daily_screen_time),
           daily_phone_usage: Number(formData.daily_phone_usage),
           news_platform: formData.news_platform,
@@ -62,11 +64,23 @@ function App() {
           ),
           sleep_hours: Number(formData.sleep_hours),
           sleep_time: formData.sleep_time,
+          thoughts: formData.thoughts,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Prediction failed");
+        const errorData = await response.json().catch(() => null);
+        let errorMsg = "Prediction failed";
+        if (errorData?.detail) {
+          if (Array.isArray(errorData.detail)) {
+            errorMsg = errorData.detail
+              .map((d) => `${d.loc?.[d.loc.length - 1] || "field"}: ${d.msg}`)
+              .join(", ");
+          } else if (typeof errorData.detail === "string") {
+            errorMsg = errorData.detail;
+          }
+        }
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
@@ -74,7 +88,9 @@ function App() {
       setResult(data);
     } catch (err) {
       setError(
-        "Could not connect to the prediction server. Please make sure FastAPI is running."
+        err.message && err.message !== "Failed to fetch"
+          ? err.message
+          : "Could not connect to the prediction server. Please make sure FastAPI is running."
       );
     } finally {
       setLoading(false);
@@ -117,15 +133,15 @@ function App() {
         </header>
 
 
-        {/* CONTENT */}
+       
         <div className="content-layout">
 
-          {/* LEFT FORM */}
+
           <section className="form-card">
 
             <form onSubmit={handleSubmit}>
 
-              {/* PROFILE */}
+             
               <div className="form-section">
 
                 <SectionTitle
@@ -186,7 +202,7 @@ function App() {
               </div>
 
 
-              {/* ACADEMIC & DIGITAL */}
+              
               <div className="form-section">
 
                 <SectionTitle
@@ -323,7 +339,7 @@ function App() {
               </div>
 
 
-              {/* LIFESTYLE */}
+             
               <div className="form-section">
 
                 <SectionTitle
@@ -369,7 +385,7 @@ function App() {
                   </Field>
 
 
-                  <Field label="Sleep / night">
+                  <Field label="Sleep Period">
                     <div className="input-with-unit">
                       <input
                         type="number"
@@ -387,7 +403,7 @@ function App() {
                   </Field>
 
 
-                  <Field label="Sleep time">
+                  <Field label="Sleep Duration">
                     <Select
                       name="sleep_time"
                       value={formData.sleep_time}
@@ -396,6 +412,19 @@ function App() {
                       options={[
                         "Night",
                         "Day",
+                      ]}
+                    />
+                  </Field>
+
+
+                  <Field label=" time of day for stressful Thoughts">
+                    <Select
+                      name="thoughts"
+                      value={formData.thoughts}
+                      onChange={handleChange}
+                      options={[
+                        "Day",
+                        "Night",
                       ]}
                     />
                   </Field>
@@ -501,9 +530,6 @@ function Field({ label, children }) {
 }
 
 
-/* -------------------------------- */
-/* Select */
-/* -------------------------------- */
 
 function Select({
   name,
@@ -592,9 +618,7 @@ function EmptySignal() {
 }
 
 
-/* -------------------------------- */
-/* Loading */
-/* -------------------------------- */
+
 
 function LoadingSignal() {
   return (
@@ -615,9 +639,7 @@ function LoadingSignal() {
 }
 
 
-/* -------------------------------- */
-/* Result */
-/* -------------------------------- */
+
 
 function ResultSignal({ result }) {
   const level = result.stress_level || "Unknown";
